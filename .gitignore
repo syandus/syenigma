@@ -31,3 +31,6 @@
 .vs
 /server/x64
 /packer/x64
+
+# project file
+*.enigma
