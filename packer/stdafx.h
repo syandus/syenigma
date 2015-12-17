@@ -26,3 +26,5 @@
 #include <modes.h>
 #include <aes.h>
 #include <filters.h>
+
+#include <snappy.h>

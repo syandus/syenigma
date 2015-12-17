@@ -38,15 +38,19 @@ Filesystem::~Filesystem() {}
 
 void Filesystem::decrypt(const std::string& ciphertext,
                          std::string& plaintext) {
+  std::string compressed_plaintext;
+
   CryptoPP::AES::Decryption aes_decryption(&mKey[0], mKey.size());
   CryptoPP::CBC_Mode_ExternalCipher::Decryption cbc_decryption(aes_decryption,
                                                                &mIV[0]);
-
   CryptoPP::StreamTransformationFilter stf_decryptor(
-      cbc_decryption, new CryptoPP::StringSink(plaintext));
+      cbc_decryption, new CryptoPP::StringSink(compressed_plaintext));
   stf_decryptor.Put(reinterpret_cast<const unsigned char*>(ciphertext.c_str()),
                     ciphertext.size());
   stf_decryptor.MessageEnd();
+
+  snappy::Uncompress(compressed_plaintext.c_str(), compressed_plaintext.size(),
+                     &plaintext);
 }
 
 void Filesystem::load_pack(std::string pack_path) {
@@ -60,7 +64,7 @@ void Filesystem::load_pack(std::string pack_path) {
 
 void Filesystem::read_header() {
   static const char* magic = "SYENIGMA";
-  
+
   mPathToBytes.clear();
   mPathToEncryptedSize.clear();
 

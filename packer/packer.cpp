@@ -97,14 +97,18 @@ bool Packer::pack(std::string input_directory, std::string output_file) {
 
 void Packer::encrypt(const std::string& plaintext, byte* key, size_t key_len,
                      byte* iv, size_t iv_len, std::string& ciphertext) {
+  std::string compressed_plaintext;
+  snappy::Compress(plaintext.c_str(), plaintext.size(), &compressed_plaintext);
+
   CryptoPP::AES::Encryption aes_encryption(key, key_len);
   CryptoPP::CBC_Mode_ExternalCipher::Encryption cbc_encryption(aes_encryption,
                                                                iv);
 
   CryptoPP::StreamTransformationFilter stf_encryptor(
       cbc_encryption, new CryptoPP::StringSink(ciphertext));
-  stf_encryptor.Put(reinterpret_cast<const unsigned char*>(plaintext.c_str()),
-                    plaintext.length());
+  stf_encryptor.Put(
+      reinterpret_cast<const unsigned char*>(compressed_plaintext.c_str()),
+      compressed_plaintext.length());
   stf_encryptor.MessageEnd();
 }
 int main(int argc, char* argv[]) {

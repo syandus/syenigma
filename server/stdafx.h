@@ -31,3 +31,5 @@
 #include <filters.h>
 
 #include "mongoose.h"
+
+#include <snappy.h>
