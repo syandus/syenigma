@@ -1,3 +1,6 @@
 [submodule "server/mongoose"]
 	path = server/mongoose
 	url = https://github.com/cesanta/mongoose.git
+[submodule "snappy"]
+	path = snappy
+	url = https://github.com/google/snappy.git
