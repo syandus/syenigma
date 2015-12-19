@@ -2,15 +2,13 @@
 #include "server.hpp"
 #include "filesystem.hpp"
 
-static std::string get_extension(std::string path) {
-  size_t i = path.rfind(".");
-  if (i == path.npos) return "";
-  return std::string(path.begin() + i + 1, path.end());
-}
+#include "mongoose.h"
 
 Server::Server(Filesystem* filesystem)
-    : mBoundPort(-1), mFilesystem(filesystem) {
-  memset(&mRequestHeader, 0, sizeof(mRequestHeader));
+    : mManager(nullptr), mFilesystem(filesystem), mBoundPort(-1) {
+  mManager = (struct mg_mgr*)malloc(sizeof(struct mg_mgr));
+  mg_mgr_init(mManager, this);
+
   mMimeTypes[""] = "application/octet-stream";
   mMimeTypes["txt"] = "text/plain";
   mMimeTypes["css"] = "text/css";
@@ -22,7 +20,7 @@ Server::Server(Filesystem* filesystem)
   mMimeTypes["png"] = "image/png";
   mMimeTypes["jpg"] = "image/jpeg";
   mMimeTypes["gif"] = "image/gif";
-  
+
   for (auto file : mFilesystem->get_file_list()) {
     std::string ext = get_extension(file);
     if (mMimeTypes.count(ext) == 0) {
@@ -32,13 +30,16 @@ Server::Server(Filesystem* filesystem)
   }
 }
 
-Server::~Server() {}
+Server::~Server() {
+  mg_mgr_free(mManager);
+  free(mManager);
+}
 
-void Server::find_free_port_and_bind(struct mg_mgr* mgr) {
+void Server::find_free_port_and_bind() {
   for (int port = 9000; port < 65536; ++port) {
     std::stringstream ss;
     ss << "127.0.0.1:" << port;
-    auto* conn = mg_bind(mgr, ss.str().c_str(), Server::ev_handler);
+    auto* conn = mg_bind(mManager, ss.str().c_str(), Server::s_ev_handler);
     if (conn) {
       mBoundPort = port;
       break;
@@ -52,12 +53,12 @@ std::string Server::get_url() {
   return ss.str();
 }
 
-void Server::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
+void Server::s_ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
   Server* server = reinterpret_cast<Server*>(nc->mgr->user_data);
-  server->ev_handler(nc, ev);
+  server->ev_handler(nc, ev, ev_data);
 }
 
-void Server::ev_handler(struct mg_connection* nc, int ev) {
+void Server::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
   struct mbuf* io = &nc->recv_mbuf;
 
   switch (ev) {
@@ -65,16 +66,17 @@ void Server::ev_handler(struct mg_connection* nc, int ev) {
       mRequestHeader += std::string(io->buf, io->len);
       mbuf_remove(io, io->len);
 
+      http_message request_message;
       static const int is_req = 1;
       int complete =
           mg_parse_http(mRequestHeader.c_str(), mRequestHeader.size(),
-                        &mRequestMessage, is_req);
+                        &request_message, is_req);
       if (!complete) return;
 
       std::string method =
-          std::string(mRequestMessage.method.p, mRequestMessage.method.len);
+          std::string(request_message.method.p, request_message.method.len);
       std::string uri =
-          std::string(mRequestMessage.uri.p, mRequestMessage.uri.len);
+          std::string(request_message.uri.p, request_message.uri.len);
 
       if (method == "GET") {
         this->get_file(uri, nc);
@@ -141,23 +143,8 @@ void Server::fail(struct mg_connection* nc) {
             "\r\n");
 }
 
-int main(int argc, char* argv[]) {
-  std::vector<std::string> args(argv, argv + argc);
-  const char* asset_pack = "files.enigma";
-  if (args.size() == 2) asset_pack = args[1].c_str();
-
-  Filesystem filesystem(asset_pack);
-
-  struct mg_mgr mgr;
-  Server server(&filesystem);
-  mg_mgr_init(&mgr, &server);
-
-  server.find_free_port_and_bind(&mgr);
-
+void Server::_loop() {
   for (;;) {
-    mg_mgr_poll(&mgr, 1000);
+    mg_mgr_poll(mManager, 1000);
   }
-  mg_mgr_free(&mgr);
-
-  return 0;
 }

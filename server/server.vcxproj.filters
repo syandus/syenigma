@@ -27,6 +27,12 @@
     <ClInclude Include="..\snappy-stubs-public.h">
       <Filter>snappy</Filter>
     </ClInclude>
+    <ClInclude Include="gui.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="keyrequester.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -52,6 +58,18 @@
     </ClCompile>
     <ClCompile Include="..\snappy\snappy-stubs-internal.cc">
       <Filter>snappy</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="gui.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="keyrequester.cpp">
+      <Filter>server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

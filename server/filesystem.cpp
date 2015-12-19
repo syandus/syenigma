@@ -3,11 +3,6 @@
 
 using namespace boost::interprocess;
 
-static void error(std::string msg) {
-  std::cerr << msg << std::endl;
-  throw std::exception();
-}
-
 static size_t read_size_t(const byte*& p) {
   size_t n = *reinterpret_cast<const size_t*>(p);
   p += sizeof(size_t);
@@ -25,8 +20,14 @@ static std::string read_string(const byte*& p) {
   return s;
 }
 
-Filesystem::Filesystem(std::string pack_path)
-    : mPackPath(pack_path), mFileBytes(nullptr) {
+static std::string read_file(const std::string& path) {
+  std::ifstream ifs(to_utf16(path).c_str(), std::ifstream::binary);
+  std::string data((std::istreambuf_iterator<char>(ifs)),
+                   (std::istreambuf_iterator<char>()));
+  return data;
+}
+
+Filesystem::Filesystem(std::wstring pack_path) : mFileBytes(nullptr) {
   // TODO: actually route key info here
   mKey.resize(CryptoPP::AES::DEFAULT_KEYLENGTH, '\0');
   mIV.resize(CryptoPP::AES::BLOCKSIZE, '\0');
@@ -34,7 +35,11 @@ Filesystem::Filesystem(std::string pack_path)
   this->load_pack(pack_path);
 }
 
-Filesystem::~Filesystem() {}
+Filesystem::~Filesystem() {
+  UnmapViewOfFile(mBytes);
+  CloseHandle(mMapHandle);
+  CloseHandle(mFileHandle);
+}
 
 void Filesystem::decrypt(const std::string& ciphertext,
                          std::string& plaintext) {
@@ -53,16 +58,34 @@ void Filesystem::decrypt(const std::string& ciphertext,
                      &plaintext);
 }
 
-void Filesystem::load_pack(std::string pack_path) {
-  mFileMapping = file_mapping(pack_path.c_str(), read_only);
-  mMappedRegion = mapped_region(mFileMapping, read_only);
-  mBytes = (const byte*)mMappedRegion.get_address();
-  mSize = mMappedRegion.get_size();
+void Filesystem::load_pack(std::wstring pack_path) {
+  mFileHandle = CreateFile(pack_path.c_str(), GENERIC_READ, FILE_SHARE_READ,
+                           NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+  if (mFileHandle == INVALID_HANDLE_VALUE) {
+    error("could not open enigma file pack");
+  }
 
-  this->read_header();
+  LARGE_INTEGER size;
+  if (!GetFileSizeEx(mFileHandle, &size)) {
+    error("could not determine enigma file pack size");
+  }
+  mSize = size.QuadPart;
+
+  mMapHandle = CreateFileMapping(mFileHandle, NULL, PAGE_READONLY, 0, 0, 0);
+  if (mMapHandle == NULL) {
+    error("could not create file mapping for enigma file pack");
+  }
+  mBytes = (const byte*) MapViewOfFile(mMapHandle, FILE_MAP_READ, 0, 0, 0);
+  if (!mBytes) {
+    auto err = GetLastError();
+    error("could not MapViewOfFile of enigma file pack");
+  }
 }
 
-void Filesystem::read_header() {
+void Filesystem::load_key(std::string path) {
+  std::string keystr = read_file(path);
+  memcpy(&mKey[0], &keystr[0], CryptoPP::AES::DEFAULT_KEYLENGTH);
+      
   static const char* magic = "SYENIGMA";
 
   mPathToBytes.clear();
@@ -96,6 +119,7 @@ void Filesystem::read_header() {
 }
 
 bool Filesystem::exists(std::string path) {
+  if (mPathToBytes.size() == 0) return false;
   return mPathToBytes.count(path) > 0;
 }
 

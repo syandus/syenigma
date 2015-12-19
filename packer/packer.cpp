@@ -10,7 +10,15 @@ Packer::~Packer() {}
 
 static void unixify(std::string& path) { boost::replace_all(path, "\\", "/"); }
 
-bool Packer::pack(std::string input_directory, std::string output_file) {
+static std::string read_file(const std::string& path) {
+  std::ifstream ifs(path, std::ifstream::binary);
+  std::string data((std::istreambuf_iterator<char>(ifs)),
+                   (std::istreambuf_iterator<char>()));
+  return data;
+}
+
+bool Packer::pack(std::string key_file, std::string input_directory,
+                  std::string output_file) {
   fs::path root(input_directory);
   if (!fs::is_directory(root)) {
     std::cerr << "given [input_directory] is not a directory: "
@@ -18,9 +26,20 @@ bool Packer::pack(std::string input_directory, std::string output_file) {
     return false;
   }
 
-  byte key[CryptoPP::AES::DEFAULT_KEYLENGTH], iv[CryptoPP::AES::BLOCKSIZE];
-  memset(key, 0x00, CryptoPP::AES::DEFAULT_KEYLENGTH);
+  static const size_t key_size = CryptoPP::AES::DEFAULT_KEYLENGTH;
+
+  byte key[key_size], iv[CryptoPP::AES::BLOCKSIZE];
+  memset(key, 0x00, key_size);
   memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
+
+  std::string keystr = read_file(key_file);
+  if (keystr.size() != key_size) {
+    std::stringstream ss;
+    ss << "key file must be " << key_size << " bytes.";
+    throw std::exception(ss.str().c_str());
+  } else {
+    memcpy(key, &keystr[0], key_size);
+  }
 
   std::queue<fs::path> q;
   q.push(root);
@@ -43,17 +62,15 @@ bool Packer::pack(std::string input_directory, std::string output_file) {
         q.push(child_path);
       } else {
         std::string file_path = child_path.generic_string();
-        std::ifstream ifs(file_path, std::ifstream::binary);
-        std::string data((std::istreambuf_iterator<char>(ifs)),
-                         (std::istreambuf_iterator<char>()));
+        std::string data = read_file(file_path);
 
         std::string packed_path = file_path.substr(input_directory.size());
         unixify(packed_path);
         files.push_back(file_path);
 
         std::string ciphertext;
-        this->encrypt(data, key, CryptoPP::AES::DEFAULT_KEYLENGTH, iv,
-                      CryptoPP::AES::BLOCKSIZE, ciphertext);
+        this->encrypt(data, key, key_size, iv, CryptoPP::AES::BLOCKSIZE,
+                      ciphertext);
 
         std::cout << packed_path << "\n";
         header.write(packed_path.c_str(), packed_path.size());
@@ -82,7 +99,7 @@ bool Packer::pack(std::string input_directory, std::string output_file) {
 
   const auto& headerstr = header.str();
   std::string encrypted_header;
-  this->encrypt(headerstr, key, CryptoPP::AES::DEFAULT_KEYLENGTH, iv,
+  this->encrypt(headerstr, key, key_size, iv,
                 CryptoPP::AES::BLOCKSIZE, encrypted_header);
 
   size_t encrypted_header_len = encrypted_header.size();
@@ -113,14 +130,15 @@ void Packer::encrypt(const std::string& plaintext, byte* key, size_t key_len,
 }
 int main(int argc, char* argv[]) {
   std::vector<std::string> args(argv, argv + argc);
-  if (args.size() != 3) {
-    std::cout << args[0] << " [input directory] [output file]\n";
+  if (args.size() != 4) {
+    std::cout << args[0] << " [key file] [input directory] [output file]\n";
     return 0;
   }
 
-  std::string input_directory = args[1];
-  std::string output_file = args[2];
+  std::string key_file = args[1];
+  std::string input_directory = args[2];
+  std::string output_file = args[3];
   Packer packer;
-  packer.pack(input_directory, output_file);
+  packer.pack(key_file, input_directory, output_file);
   return 0;
 }
