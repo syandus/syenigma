@@ -64,6 +64,17 @@ static std::wstring locate_asset_pack() {
 
 wxDECLARE_EVENT(StartServerEvent, wxCommandEvent);
 
+class MyApp;
+class PollTimer : public wxTimer {
+ public:
+  PollTimer(MyApp* app) : mApp(app) {}
+  ~PollTimer() {}
+  virtual void Notify();
+
+ private:
+  MyApp* mApp;
+};
+
 class MyApp : public wxApp {
  public:
   MyApp() { Bind(StartServerEvent, &MyApp::StartServer, this); }
@@ -82,7 +93,7 @@ class MyApp : public wxApp {
 
     std::string key_file = basename + ".key";
     std::string key_file_path = data_directory + "/" + key_file;
-    mKeyFilePath = to_utf16(key_file_path);
+    mKeyFilePath = key_file_path;
 
     if (!fs::exists(fs::path(to_utf16(key_file_path)))) {
       KeyRequestInfo info;
@@ -100,19 +111,31 @@ class MyApp : public wxApp {
     return true;
   }
   void StartServer(wxCommandEvent& event) {
-    mFilesystem = std::make_unique<Filesystem>(mAssetPackPath, mKeyFilePath);
+    mFilesystem = std::make_unique<Filesystem>(mAssetPackPath);
+    mFilesystem->load_key(mKeyFilePath);
+
     mServer = std::make_unique<Server>(mFilesystem.get());
     mServer->find_free_port_and_bind();
 
     auto gui = new Gui(wxT("Simple"));
     gui->Show();
+
+    mPollTimer = std::make_unique<PollTimer>(this);
+    mPollTimer->SetOwner(this);
+    mPollTimer->Start(100);
+  }
+  void poll() {
+    if (mServer) mServer->poll();
   }
 
  private:
   std::unique_ptr<Filesystem> mFilesystem;
   std::unique_ptr<Server> mServer;
   std::wstring mAssetPackPath;
-  std::wstring mKeyFilePath;
+  std::string mKeyFilePath;
+  std::unique_ptr<PollTimer> mPollTimer;
 };
+
+void PollTimer::Notify() { mApp->poll(); }
 
 IMPLEMENT_APP(MyApp)
