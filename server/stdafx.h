@@ -32,6 +32,7 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/ostream_iterator.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <cryptlib.h>
 #include <aes.h>

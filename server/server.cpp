@@ -75,6 +75,8 @@ void Server::s_ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
   server->ev_handler(nc, ev, ev_data);
 }
 
+// TODO: eliminate usage of member variables, or at least convert them TLS
+// variables, so we can use multithreading
 void Server::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
   struct mbuf* io = &nc->recv_mbuf;
 
@@ -89,16 +91,39 @@ void Server::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
           mg_parse_http(mRequestHeader.c_str(), mRequestHeader.size(),
                         &request_message, is_req);
       if (!complete) return;
+      /* OutputDebugStringA(mRequestHeader.c_str()); */
 
       std::string method =
           std::string(request_message.method.p, request_message.method.len);
       std::string uri =
           std::string(request_message.uri.p, request_message.uri.len);
 
+      std::vector<uint64_t> range;
+      for (int i = 0; i < MG_MAX_HTTP_HEADERS; ++i) {
+        struct mg_str namestr = request_message.header_names[i];
+        struct mg_str valuestr = request_message.header_values[i];
+        if (!namestr.p) continue;
+        std::string name(namestr.p, namestr.len);
+        std::string value(valuestr.p, valuestr.len);
+        if (name == "Range") {
+          std::vector<std::string> tokens;
+          boost::split(tokens, value, boost::is_any_of("="));
+          if (tokens.size() == 2 && tokens[0] == "bytes") {
+            std::string bytes = tokens[1];
+            tokens.clear();
+            boost::split(tokens, bytes, boost::is_any_of("-"));
+            for (auto token : tokens) {
+              if (!token.empty())
+                range.push_back(boost::lexical_cast<uint64_t>(token));
+            }
+          }
+        }
+      }
+
       if (method == "GET") {
-        this->get_file(uri, nc);
+        this->get_file(uri, range, nc);
       } else {
-        // in case we try to POST??
+        // in case we browser tries to POST??
         this->fail(nc);
       }
 
@@ -119,7 +144,8 @@ void Server::push(struct mg_connection* nc, const std::string& s) {
   mg_send(nc, s.c_str(), s.size());
 }
 
-void Server::get_file(std::string uri, struct mg_connection* nc) {
+void Server::get_file(std::string uri, std::vector<uint64_t> range,
+                      struct mg_connection* nc) {
   // requesting the root redirects to index.html
   if (uri == "/") uri = "/index.html";
 
@@ -131,7 +157,11 @@ void Server::get_file(std::string uri, struct mg_connection* nc) {
   std::string file = mFilesystem->get_file(uri);
   std::string ext = get_extension(uri);
 
-  push(nc, "HTTP/1.1 200 OK\r\n");
+  if (range.size() > 0) {
+    push(nc, "HTTP/1.1 206 Partial Content\r\n");
+  } else {
+    push(nc, "HTTP/1.1 200 OK\r\n");
+  }
 
   push(nc, "Content-Type: ");
   auto iter = mMimeTypes.find(ext);
@@ -143,16 +173,38 @@ void Server::get_file(std::string uri, struct mg_connection* nc) {
   }
   push(nc, "\r\n");
 
-  push(nc, "Content-Length: ");
-  push(nc, boost::lexical_cast<std::string>(file.size()));
-  push(nc, "\r\n");
-  
   push(nc, "Cache-Control: max-age=3600");
   push(nc, "\r\n");
 
+  if (range.size() > 0) {
+    push(nc, "Accept-Ranges: bytes");
+    push(nc, "\r\n");
+
+    uint64_t n = file.size();
+    uint64_t begin = range[0];
+    uint64_t end = n - 1;
+    if (range.size() >= 2) {
+      end = range[1];
+    }
+    
+    uint64_t len = end - begin + 1;
+    push(nc, "Content-Length: ");
+    push(nc, boost::lexical_cast<std::string>(len));
+    push(nc, "\r\n");
+
+    std::stringstream ss;
+    ss << "Content-Range: bytes " << begin << "-" << end << "/" << n << "\r\n";
+    push(nc, ss.str());
+    
+    file = file.substr(begin, len);
+  } else {
+    push(nc, "Content-Length: ");
+    push(nc, boost::lexical_cast<std::string>(file.size()));
+    push(nc, "\r\n");
+  }
+
   // terminating new line
   push(nc, "\r\n");
-
   push(nc, file);
 }
 
@@ -161,8 +213,7 @@ void Server::fail(struct mg_connection* nc) {
             "HTTP/1.1 404 Not Found\r\n"
             "Content-Length: 0\r\n"
             "\r\n");
+  /* OutputDebugStringA("404\n"); */
 }
 
-void Server::poll() {
-  mg_mgr_poll(mManager, 0);
-}
+void Server::poll() { mg_mgr_poll(mManager, 0); }
