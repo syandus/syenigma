@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 
 #include <iostream>
 #include <map>
@@ -30,9 +31,11 @@
 #include <boost/archive/iterators/insert_linebreaks.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/ostream_iterator.hpp>
+#include <boost/algorithm/string/trim_all.hpp>
 
 #include <cryptlib.h>
 #include <aes.h>
+#include <sha.h>
 #include <modes.h>
 #include <filters.h>
 
