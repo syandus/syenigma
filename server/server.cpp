@@ -10,22 +10,39 @@ Server::Server(Filesystem* filesystem)
   mg_mgr_init(mManager, this);
 
   mMimeTypes[""] = "application/octet-stream";
-  mMimeTypes["txt"] = "text/plain";
   mMimeTypes["css"] = "text/css";
-  mMimeTypes["js"] = "application/javascript";
+  mMimeTypes["eot"] = "application/vnd.ms-fontobject";
+  mMimeTypes["gif"] = "image/gif";
   mMimeTypes["html"] = "text/html";
+  mMimeTypes["jpg"] = "image/jpeg";
+  mMimeTypes["js"] = "application/javascript";
+  mMimeTypes["less"] = "text/css";
+  mMimeTypes["map"] = "application/json";
+  mMimeTypes["md"] = "text/markdown";
   mMimeTypes["mp3"] = "audio/mpeg";
   mMimeTypes["mp4"] = "video/mp4";
-  mMimeTypes["webm"] = "video/webm";
+  mMimeTypes["otf"] = "application/font-otf";
   mMimeTypes["png"] = "image/png";
-  mMimeTypes["jpg"] = "image/jpeg";
-  mMimeTypes["gif"] = "image/gif";
+  mMimeTypes["sh"] = "text/x-shellscript";
+  mMimeTypes["svg"] = "image/svg+xml";
+  mMimeTypes["swf"] = "application/x-shockwave-flash";
+  mMimeTypes["ttf"] = "application/font-ttf";
+  mMimeTypes["txt"] = "text/plain";
+  mMimeTypes["vtt"] = "text/vtt";
+  mMimeTypes["webm"] = "video/webm";
+  mMimeTypes["woff"] = "application/font-woff";
+  mMimeTypes["woff2"] = "application/font-woff2";
+  mMimeTypes["xml"] = "application/xml";
+  mMimeTypes["zip"] = "application/octet-stream";
+  // custom
+  mMimeTypes["sql"] = "text/plain";
 
   for (auto file : mFilesystem->get_file_list()) {
     std::string ext = get_extension(file);
     if (mMimeTypes.count(ext) == 0) {
-      std::cerr << "unrecognized extension: " << ext << std::endl;
-      throw std::exception();
+      std::stringstream ss;
+      ss << "unrecognized extension: " << ext << std::endl;
+      OutputDebugStringA(ss.str().c_str());
     }
   }
 }
@@ -129,6 +146,9 @@ void Server::get_file(std::string uri, struct mg_connection* nc) {
   push(nc, "Content-Length: ");
   push(nc, boost::lexical_cast<std::string>(file.size()));
   push(nc, "\r\n");
+  
+  push(nc, "Cache-Control: max-age=3600");
+  push(nc, "\r\n");
 
   // terminating new line
   push(nc, "\r\n");
@@ -143,8 +163,6 @@ void Server::fail(struct mg_connection* nc) {
             "\r\n");
 }
 
-void Server::_loop() {
-  for (;;) {
-    mg_mgr_poll(mManager, 1000);
-  }
+void Server::poll() {
+  mg_mgr_poll(mManager, 0);
 }

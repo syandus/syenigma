@@ -14,8 +14,7 @@ class Server {
   void find_free_port_and_bind();
   std::string get_url();
   
-  // only for debugging temp purposes;
-  void _loop();
+  void poll();
   
  private:
   void ev_handler(struct mg_connection* nc, int ev, void* ev_data);
