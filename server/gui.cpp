@@ -2,6 +2,7 @@
 
 #include "gui.hpp"
 #include "keyrequester.hpp"
+#include "server.hpp"
 
 wxDECLARE_EVENT(StartServerEvent, wxCommandEvent);
 wxDEFINE_EVENT(StartServerEvent, wxCommandEvent);
@@ -11,7 +12,9 @@ wxDEFINE_EVENT(StartServerEvent, wxCommandEvent);
 KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
     : mParent(parent),
       mKeyRequestInfo(info),
-      wxFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize) {
+      wxFrame(NULL, wxID_ANY, "MSD Scientific Education", wxDefaultPosition,
+              wxDefaultSize) {
+  this->SetIcon(wxICON(IDI_ICON1));
   auto panel = new wxPanel(this, wxID_ANY);
 
   auto sizer = new wxBoxSizer(wxVERTICAL);
@@ -80,9 +83,9 @@ void KeyRequesterFrame::RequestLicense(wxCommandEvent& event) {
     std::ofstream ofs(mKeyRequestInfo.path, std::ios::binary);
     ofs << requester.get_key();
     ofs.close();
-    
+
     this->Close();
-    
+
     wxCommandEvent event(StartServerEvent);
     wxPostEvent(mParent, event);
   } else {
@@ -97,9 +100,108 @@ void KeyRequesterFrame::RequestLicense(wxCommandEvent& event) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Gui::Gui(const wxString& title)
-    : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(250, 150)) {
+Gui::Gui(wxApp* parent, KeyRequestInfo info, Server* server)
+    : mParent(parent),
+      mKeyRequestInfo(info),
+      mServer(server),
+      wxFrame(NULL, wxID_ANY, "MSD Scientific Education", wxDefaultPosition,
+              wxSize(250, 150)) {
+  this->SetIcon(wxICON(IDI_ICON1));
+  auto panel = new wxPanel(this, wxID_ANY);
+  auto sizer = new wxBoxSizer(wxVERTICAL);
+
+  auto& font0 =
+      wxFont(14, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+  auto& font1 =
+      wxFont(18, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
+
+  auto line0 = new wxStaticText(panel, wxID_ANY, "Resource:", wxDefaultPosition,
+                                wxDefaultSize);
+  line0->SetFont(font0);
+  sizer->Add(line0, 0, wxALIGN_CENTER | wxALL, 8);
+
+  auto line1 = new wxStaticText(panel, wxID_ANY, mKeyRequestInfo.basename,
+                                wxDefaultPosition, wxDefaultSize,
+                                wxALIGN_CENTRE_HORIZONTAL);
+  line1->SetFont(font1);
+  sizer->Add(line1, 0, wxEXPAND | wxALL, 8);
+
+  auto button_sizer = new wxBoxSizer(wxHORIZONTAL);
+  sizer->Add(button_sizer, 0, wxALIGN_CENTER | wxALL, 4);
+
+  auto about =
+      new wxButton(panel, kAbout, "About", wxDefaultPosition, wxSize(100, 44));
+  button_sizer->Add(about, 0, wxALIGN_CENTER | wxALL, 4);
+
+  auto open_page = new wxButton(panel, kOpenWebPage, "Open Resource",
+                                wxDefaultPosition, wxSize(100, 44));
+  button_sizer->Add(open_page, 0, wxALIGN_CENTER | wxALL, 4);
+  open_page->SetFocus();
+
+  panel->SetSizerAndFit(sizer);
+  sizer->SetSizeHints(this);
   this->Centre();
 }
 
 Gui::~Gui() {}
+
+BEGIN_EVENT_TABLE(Gui, wxFrame)
+EVT_BUTTON(kOpenWebPage, Gui::OpenWebPage)
+EVT_BUTTON(kAbout, Gui::OpenAbout)
+END_EVENT_TABLE()
+
+static LONG GetStringRegKey(HKEY hKey, const std::wstring& strValueName,
+                            std::wstring& strValue,
+                            const std::wstring& strDefaultValue) {
+  strValue = strDefaultValue;
+  WCHAR szBuffer[1024];
+  DWORD dwBufferSize = sizeof(szBuffer);
+  ULONG nError;
+  nError = RegQueryValueExW(hKey, strValueName.c_str(), 0, NULL,
+                            (LPBYTE)szBuffer, &dwBufferSize);
+  if (ERROR_SUCCESS == nError) {
+    strValue = szBuffer;
+  }
+  return nError;
+}
+
+void Gui::OpenWebPage(wxCommandEvent& event) {
+  std::wstring browser;
+  HKEY hkey;
+  RegOpenKeyEx(HKEY_CLASSES_ROOT, L"http\\shell\\open\\command", 0, KEY_READ,
+               &hkey);
+  GetStringRegKey(hkey, L"", browser, L"");
+  std::wstring url(to_utf16(mServer->get_url()).c_str());
+  if (browser.empty()) {
+    // this buggy and sometimes doesn't work. it actually mysteriously blocks
+    // the program. maybe one of those things that was caused by the debugger
+    // hanging up Chrome interop and requires a reboot?
+    ShellExecute(0, L"open", url.c_str(), 0, 0, SW_SHOW);
+  } else {
+    std::wstring cmd;
+    if (browser.find(L"%1") != std::wstring::npos) {
+      boost::replace_all(browser, L"%1", url);
+      cmd = browser;
+    } else {
+      cmd = browser + L" " + url;
+    }
+    auto dummy = cmd.c_str();
+    STARTUPINFO sui;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&sui, sizeof(sui));
+    sui.cb = sizeof(sui);
+    ::CreateProcess(NULL, &cmd[0], NULL, NULL, NULL, FALSE, 0, NULL, &sui, &pi);
+  }
+}
+
+void Gui::OpenAbout(wxCommandEvent& event) {
+  namespace fs = boost::filesystem;
+  wchar_t buf[4096];
+  GetModuleFileNameW(NULL, buf, 4096);
+  std::wstring module_path(buf);
+  fs::path p(module_path);
+  p = p.parent_path();
+  p /= L"LICENSES.txt";
+
+  ShellExecute(0, L"open", p.generic_wstring().c_str(), 0, 0, SW_SHOW);
+}

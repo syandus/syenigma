@@ -1,9 +1,17 @@
 #pragma once
 
+class Server;
+
 struct KeyRequestInfo {
   std::string basename;
   std::string filename;
   std::string path;
+};
+
+enum {
+  kButtonRequestLicense = wxID_HIGHEST + 1,
+  kOpenWebPage,
+  kAbout,
 };
 
 class KeyRequesterFrame : public wxFrame {
@@ -15,10 +23,6 @@ class KeyRequesterFrame : public wxFrame {
   
   DECLARE_EVENT_TABLE();
       
-  enum {
-    kButtonRequestLicense = wxID_HIGHEST + 1,
-  };
-
  private:
   wxApp* mParent;
   const KeyRequestInfo mKeyRequestInfo;
@@ -28,8 +32,16 @@ class KeyRequesterFrame : public wxFrame {
 
 class Gui : public wxFrame {
  public:
-  Gui(const wxString& title);
+  Gui(wxApp* parent, KeyRequestInfo info, Server* server);
   ~Gui();
+  
+  void OpenWebPage(wxCommandEvent& event);
+  void OpenAbout(wxCommandEvent& event);
+  
+  DECLARE_EVENT_TABLE();
 
  private:
+  wxApp* mParent;
+  const KeyRequestInfo mKeyRequestInfo;
+  Server* mServer;
 };
