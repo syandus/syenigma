@@ -53,7 +53,7 @@ Server::~Server() {
 }
 
 void Server::find_free_port_and_bind() {
-  for (int port = 9000; port < 65536; ++port) {
+  for (int port = 9001; port < 65536; ++port) {
     std::stringstream ss;
     ss << "127.0.0.1:" << port;
     auto* conn = mg_bind(mManager, ss.str().c_str(), Server::s_ev_handler);
@@ -66,7 +66,7 @@ void Server::find_free_port_and_bind() {
 
 std::string Server::get_url() {
   std::stringstream ss;
-  ss << "http://localhost:" << mBoundPort;
+  ss << "http://localhost:" << mBoundPort << "/index.html";
   return ss.str();
 }
 

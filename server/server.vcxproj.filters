@@ -7,6 +7,9 @@
     <Filter Include="snappy">
       <UniqueIdentifier>{1203464a-acaf-47c0-837a-9f32f1d7e78b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{1dcb094a-5c6c-4fc4-9399-c48dbe183800}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -32,6 +35,9 @@
     </ClInclude>
     <ClInclude Include="keyrequester.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -71,5 +77,15 @@
     <ClCompile Include="keyrequester.cpp">
       <Filter>server</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="server.rc">
+      <Filter>resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="MerckIcon.ico">
+      <Filter>resources</Filter>
+    </Image>
   </ItemGroup>
 </Project>

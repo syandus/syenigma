@@ -94,12 +94,13 @@ class MyApp : public wxApp {
     std::string key_file = basename + ".key";
     std::string key_file_path = data_directory + "/" + key_file;
     mKeyFilePath = key_file_path;
+    KeyRequestInfo info;
+    info.basename = basename;
+    info.filename = key_file;
+    info.path = key_file_path;
+    mKeyRequestInfo = info;
 
     if (!fs::exists(fs::path(to_utf16(key_file_path)))) {
-      KeyRequestInfo info;
-      info.basename = basename;
-      info.filename = key_file;
-      info.path = key_file_path;
       std::string title = "Requesting License For Resource: " + basename;
       auto frame = new KeyRequesterFrame(this, info);
       frame->Show();
@@ -117,7 +118,7 @@ class MyApp : public wxApp {
     mServer = std::make_unique<Server>(mFilesystem.get());
     mServer->find_free_port_and_bind();
 
-    auto gui = new Gui(wxT("Simple"));
+    auto gui = new Gui(this, mKeyRequestInfo, mServer.get());
     gui->Show();
 
     mPollTimer = std::make_unique<PollTimer>(this);
@@ -133,6 +134,7 @@ class MyApp : public wxApp {
   std::unique_ptr<Server> mServer;
   std::wstring mAssetPackPath;
   std::string mKeyFilePath;
+  KeyRequestInfo mKeyRequestInfo;
   std::unique_ptr<PollTimer> mPollTimer;
 };
 
