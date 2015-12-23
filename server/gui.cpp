@@ -25,7 +25,7 @@ KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
       wxFont(18, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 
   auto line0 =
-      new wxStaticText(panel, wxID_ANY, "Requesting License For Resource:",
+      new wxStaticText(panel, wxID_ANY, "Requesting Access For Resource:",
                        wxDefaultPosition, wxDefaultSize);
   line0->SetFont(font0);
   sizer->Add(line0, 0, wxALIGN_CENTER | wxALL, 8);
