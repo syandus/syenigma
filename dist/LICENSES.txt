@@ -1,3 +1,20 @@
+Technical Support:
+
+Email: admin@msdscience.com
+
+-------------------------------------------------------------------------------
+
+The Merck Courses, English content is own by Merck & Co. and licensed for use
+at educational institutions.  
+
+The software engine that displays the Merck courses is owned by Syandus Inc.
+and licensed to Merck.
+
+Syandus acknowledges that following software libraries were utilized to create
+this version:  
+
+-------------------------------------------------------------------------------
+
 syenigma - A way to serve offline websites from an encrypted filesystem
 
 Copyright (C) 2015 Syandus Inc.
