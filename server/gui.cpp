@@ -13,7 +13,8 @@ KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
     : mParent(parent),
       mKeyRequestInfo(info),
       wxFrame(NULL, wxID_ANY, "MSD Scientific Education", wxDefaultPosition,
-              wxDefaultSize) {
+              wxDefaultSize,
+              wxDEFAULT_FRAME_STYLE & (~wxRESIZE_BORDER) & (~wxMAXIMIZE_BOX)) {
   this->SetIcon(wxICON(IDI_ICON1));
   auto panel = new wxPanel(this, wxID_ANY);
 
@@ -105,7 +106,8 @@ Gui::Gui(wxApp* parent, KeyRequestInfo info, Server* server)
       mKeyRequestInfo(info),
       mServer(server),
       wxFrame(NULL, wxID_ANY, "MSD Scientific Education", wxDefaultPosition,
-              wxSize(250, 150)) {
+              wxSize(250, 150),
+              wxDEFAULT_FRAME_STYLE & (~wxRESIZE_BORDER) & (~wxMAXIMIZE_BOX)) {
   this->SetIcon(wxICON(IDI_ICON1));
   auto panel = new wxPanel(this, wxID_ANY);
   auto sizer = new wxBoxSizer(wxVERTICAL);
@@ -137,6 +139,13 @@ Gui::Gui(wxApp* parent, KeyRequestInfo info, Server* server)
                                 wxDefaultPosition, wxSize(100, 44));
   button_sizer->Add(open_page, 0, wxALIGN_CENTER | wxALL, 4);
   open_page->SetFocus();
+
+  auto warning = new wxStaticText(
+      panel, wxID_ANY,
+      "Note: Do not close this program \nuntil you are finished using this "
+      "resource in your browser.",
+      wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+  sizer->Add(warning, 0, wxEXPAND | wxALL, 8);
 
   panel->SetSizerAndFit(sizer);
   sizer->SetSizeHints(this);

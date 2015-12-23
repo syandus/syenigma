@@ -155,6 +155,9 @@
       <AdditionalLibraryDirectories>C:\opt\boost\stage\lib;C:\opt\wxWidgets\lib\vc_x64_lib;C:\opt\cryptopp\x64\Output\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>cryptlib.lib;wxbase31u.lib;wxmsw31u_core.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) $(SolutionDir)..\dist\merck_courses_english_v1.exe</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\snappy-stubs-public.h" />
