@@ -64,6 +64,11 @@ KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
                              wxDefaultPosition, wxSize(100, 44));
   sizer->Add(submit, 0, wxALIGN_CENTER | wxALL, 4);
 
+  auto help = new wxStaticText(
+      panel, wxID_ANY, "For technical support, contact admin@msdscience.com",
+      wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+  sizer->Add(help, 0, wxEXPAND | wxALL, 8);
+
   panel->SetSizerAndFit(sizer);
   sizer->SetSizeHints(this);
   this->Centre();
