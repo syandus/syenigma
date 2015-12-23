@@ -5,7 +5,7 @@
 <?define ProductUpgradeCode = "7299a303-c366-4ce5-a711-f39f1a794b40"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" UpgradeCode="$(var.ProductUpgradeCode)" Name="Merck Courses English" Version="$(var.ProductVersion)" Manufacturer="$(var.ManufacturerName)" Language="1033">
-    <Package InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package"/>
+    <Package Platform="x64" InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package"/>
     <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
     <Icon Id="ProductIcon" SourceFile="MerckIcon.ico"/>
     <Property Id="ARPPRODUCTICON" Value="ProductIcon"/>
@@ -18,10 +18,10 @@
     <Condition Message="A newer version of this software is already installed.">NOT NEWERVERSIONDETECTED</Condition>
  
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLDIR" Name="$(var.ProductName)">
-          <Component Id="ApplicationFiles" Guid="14526ade-7a88-4bed-a0cf-90a3e9db6cf4">
-            <File Id="Server" Source="merck_courses_english_v1.exe"/>
+          <Component Id="ApplicationFiles" Guid="14526ade-7a88-4bed-a0cf-90a3e9db6cf4" Win64="yes">
+            <File Id="merck_courses_english_v1.exe" Source="merck_courses_english_v1.exe"/>
             <File Id="AssetPack" Source="merck_courses_english_v1.enigma"/>
             <File Id="About" Source="LICENSES.txt"/>
           </Component>
@@ -52,7 +52,9 @@
       <ComponentRef Id="ApplicationShortcutDesktop"/>		 
     </Feature>
     
-    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+    <WixVariable Id="WixUILicenseRtf" Value="Installation_Agreement.rtf" />
+    <WixVariable Id="WixUIDialogBmp" Value="MerckInstaller.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="MerckBanner.bmp" />
     <UI>
       <UIRef Id="WixUI_Minimal" />
       <Publish Dialog="ExitDialog" 
@@ -60,7 +62,7 @@
         Event="DoAction" 
         Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
     </UI>
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch My Application Name" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch $(var.ProductName)" />
 
     <Property Id="WixShellExecTarget" Value="[#merck_courses_english_v1.exe]" />
     <CustomAction Id="LaunchApplication" 
