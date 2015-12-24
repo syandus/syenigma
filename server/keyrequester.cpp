@@ -82,6 +82,7 @@ void KeyRequester::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
         if (!success) {
           mSuccess = false;
           mFailureReason = pt.get<std::string>("reason");
+          mDone = true;
           return;
         } else {
           mSuccess = true;
@@ -96,7 +97,7 @@ void KeyRequester::ev_handler(struct mg_connection* nc, int ev, void* ev_data) {
       
       mKey = base64_decode(base64_key);
 
-      mDone = 1;
+      mDone = true;
       break;
     }
     default:
