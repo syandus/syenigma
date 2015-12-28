@@ -9,9 +9,9 @@ struct KeyRequestInfo {
 };
 
 enum {
-  kButtonRequestLicense = wxID_HIGHEST + 1,
-  kOpenWebPage,
-  kAbout,
+  kButtonRequestAccess = wxID_HIGHEST + 1,
+  kButtonOpenWebPage,
+  kButtonAbout,
 };
 
 class KeyRequesterFrame : public wxFrame {

@@ -55,13 +55,13 @@ KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
                        wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
   sizer->Add(password_label, 0, wxALIGN_CENTER);
   auto password =
-      new wxTextCtrl(panel, wxID_ANY, "", wxDefaultPosition, wxSize(200, -1));
+      new wxTextCtrl(panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
   password->SetFont(font0);
   sizer->Add(password, 0, wxEXPAND | wxALL, 4);
   mPasswordTextCtrl = password;
 
-  auto submit = new wxButton(panel, kButtonRequestLicense, "Request License",
-                             wxDefaultPosition, wxSize(100, 44));
+  auto submit = new wxButton(panel, kButtonRequestAccess, "Request Access",
+                             wxDefaultPosition, wxDefaultSize);
   sizer->Add(submit, 0, wxALIGN_CENTER | wxALL, 4);
 
   auto help = new wxStaticText(
@@ -77,7 +77,7 @@ KeyRequesterFrame::KeyRequesterFrame(wxApp* parent, KeyRequestInfo info)
 KeyRequesterFrame::~KeyRequesterFrame() {}
 
 BEGIN_EVENT_TABLE(KeyRequesterFrame, wxFrame)
-EVT_BUTTON(kButtonRequestLicense, KeyRequesterFrame::RequestLicense)
+EVT_BUTTON(kButtonRequestAccess, KeyRequesterFrame::RequestLicense)
 END_EVENT_TABLE()
 
 void KeyRequesterFrame::RequestLicense(wxCommandEvent& event) {
@@ -137,11 +137,11 @@ Gui::Gui(wxApp* parent, KeyRequestInfo info, Server* server)
   sizer->Add(button_sizer, 0, wxALIGN_CENTER | wxALL, 4);
 
   auto about =
-      new wxButton(panel, kAbout, "About", wxDefaultPosition, wxSize(100, 44));
+      new wxButton(panel, kButtonAbout, "About", wxDefaultPosition, wxDefaultSize);
   button_sizer->Add(about, 0, wxALIGN_CENTER | wxALL, 4);
 
-  auto open_page = new wxButton(panel, kOpenWebPage, "Open Resource",
-                                wxDefaultPosition, wxSize(100, 44));
+  auto open_page = new wxButton(panel, kButtonOpenWebPage, "Open Resource",
+                                wxDefaultPosition, wxDefaultSize);
   button_sizer->Add(open_page, 0, wxALIGN_CENTER | wxALL, 4);
   open_page->SetFocus();
 
@@ -160,8 +160,8 @@ Gui::Gui(wxApp* parent, KeyRequestInfo info, Server* server)
 Gui::~Gui() {}
 
 BEGIN_EVENT_TABLE(Gui, wxFrame)
-EVT_BUTTON(kOpenWebPage, Gui::OpenWebPage)
-EVT_BUTTON(kAbout, Gui::OpenAbout)
+EVT_BUTTON(kButtonOpenWebPage, Gui::OpenWebPage)
+EVT_BUTTON(kButtonAbout, Gui::OpenAbout)
 END_EVENT_TABLE()
 
 static LONG GetStringRegKey(HKEY hKey, const std::wstring& strValueName,
